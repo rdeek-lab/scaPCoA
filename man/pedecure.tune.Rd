@@ -75,7 +75,7 @@ outcome Y and partial correlations with covariates A.
 \details{
 For each candidate lambda, the function runs \code{\link{pedecure}},
 computes in-sample PC scores, and evaluates partial correlations via
-\code{\link{partial.cor}}. The tuning criterion is the mean across
+\code{\link{partial_cor}}. The tuning criterion is the mean across
 covariates of the eigenvalue-weighted difference:
 \code{|pcor(Y, PC)| - |pcor(A, PC)|}.
 }

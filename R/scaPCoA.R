@@ -228,7 +228,7 @@ pedecure <- function(X, X.penalize = NULL, A, Y, lambda, nPC, centerX = FALSE, c
 #' @details
 #' For each candidate lambda, the function runs \code{\link{pedecure}},
 #' computes in-sample PC scores, and evaluates partial correlations via
-#' \code{\link{partial.cor}}. The tuning criterion is the mean across
+#' \code{\link{partial_cor}}. The tuning criterion is the mean across
 #' covariates of the eigenvalue-weighted difference:
 #' \code{|pcor(Y, PC)| - |pcor(A, PC)|}.
 #'
@@ -265,7 +265,7 @@ pedecure.tune = function(X.orig, X.max, X.penalize, lambdas, A, Y, nPC, centerX 
         temp_scores = X.orig %*% temp_out$vectors
 
         # Partial correlations:
-        temp_pcor = partial.cor(scores = temp_scores, A = A, Y = Y)$partial$estimates
+        temp_pcor = partial_cor(scores = temp_scores, A = A, Y = Y)$partial$estimates
 
         # Weighted sum of difference of absolute values of partial correlations
         # weighted_sum_abs_diff_pcor = sapply(1:ncol(A), FUN = function(a) {
@@ -528,7 +528,7 @@ estimate_x_star <- function(X.orig, Y, A, npc, lambda_ls) {
 #'     \item{v_hat}{A matrix of estimated eigenvectors.}
 #'     \item{best.lambda}{The optimal lambda selected by tuning.}
 #'     \item{eigen_values}{A numeric vector of eigenvalues.}
-#'     \item{scores.partial.cor}{A matrix of partial correlations between
+#'     \item{scores.partial_cor}{A matrix of partial correlations between
 #'       PC scores and Y/A.}
 #'   }
 #' @importFrom compositions clr
@@ -609,25 +609,25 @@ scapcoa <- function(obj, lambda_ls, pcoa, nPC=3, residualization = FALSE){
 
       # Partial Correlation
       # Look at correlations between the first few PC scores and the nuisance variables (A1, A2, Y)
-      cor.scores = partial.cor(PC.scores, A, Y)
+      cor.scores = partial_cor(PC.scores, A, Y)
 
-      scores.partial.cor = cor.scores$partial$estimates
+      scores.partial_cor = cor.scores$partial$estimates
 
       l = dim(A)[2]
 
       # Loop for y and PCs
       for (j in 1:3) {  # Assuming 3 principal components (PC1, PC2, PC3)
-        results[[paste0("pcor_y_pc", j)]] <- abs(scores.partial.cor[l + 1, j])
+        results[[paste0("pcor_y_pc", j)]] <- abs(scores.partial_cor[l + 1, j])
       }
 
       # Loop for all A (a1 to a10) and PCs
       for (i in 1:l) {  # Loop through A1, A2, ..., Al
         for (j in 1:3) {  # Loop through PC1, PC2, PC3
-          results[[paste0("pcor_a", i, "_pc", j)]] <- abs(scores.partial.cor[i, j])
+          results[[paste0("pcor_a", i, "_pc", j)]] <- abs(scores.partial_cor[i, j])
         }
       }
 
-      return(list(PC.scores = PC.scores, v_hat = v_hat, best.lambda = best.lambda, eigen_values = eigen_values, scores.partial.cor= scores.partial.cor))
+      return(list(PC.scores = PC.scores, v_hat = v_hat, best.lambda = best.lambda, eigen_values = eigen_values, scores.partial_cor= scores.partial_cor))
   }
 
 

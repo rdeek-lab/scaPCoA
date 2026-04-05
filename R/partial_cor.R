@@ -61,7 +61,7 @@ check_correlation <- function(cor) {
 #' @importFrom rstatix anova_test
 #' @importFrom stats cor sd
 #' @export
-partial.cor = function(scores, A, Y){
+partial_cor = function(scores, A, Y){
   if(is.character(Y)){
     print("Change Y from character to numeric")
   }

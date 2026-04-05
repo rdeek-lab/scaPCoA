@@ -31,7 +31,7 @@ A list with:
 \item{v_hat}{A matrix of estimated eigenvectors.}
 \item{best.lambda}{The optimal lambda selected by tuning.}
 \item{eigen_values}{A numeric vector of eigenvalues.}
-\item{scores.partial.cor}{A matrix of partial correlations between
+\item{scores.partial_cor}{A matrix of partial correlations between
 PC scores and Y/A.}
 }
 }
