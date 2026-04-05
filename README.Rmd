@@ -33,11 +33,10 @@ library(scaPCoA)
 library(ggplot2)
 library(dplyr)
 
-obj <- generate_data(seed = 1, n = 100, p = 200, l = 3, y_type = "bin",
-                     zinLDA_min = 100, zinLDA_max = 1000)
+data_microbe <-  data(data_microbe)
 
 lambda_ls <- seq(0, 10, 0.5)
-results <- scapcoa(obj, lambda_ls, nPC = 3, pcoa = TRUE, residualization = TRUE)
+results <- scapcoa(data_microbe, lambda_ls, nPC = 3, pcoa = TRUE, residualization = TRUE)
 
 # Estimated principal coordinates
 pc <- results$PC.scores

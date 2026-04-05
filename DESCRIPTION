@@ -21,3 +21,6 @@ Imports:
     parallel,
     magrittr,
     compositions
+Depends: 
+    R (>= 3.5)
+LazyData: true

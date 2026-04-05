@@ -1,4 +1,3 @@
-
 #' Calculate Feature Importance from PCoA Eigenvectors
 #'
 #' Computes feature importance scores by calculating the covariance between
@@ -29,28 +28,43 @@
 #' Legendre, P. & Legendre, L. (1998). \emph{Numerical Ecology}. Elsevier.
 #'
 #' @importFrom stats cov
-#' @importFrom dplyr mutate
-#' @importFrom tibble rownames_to_column
 #' @export
-calc_feature_importance <- function(eigen_vectors, eigen_values, X_train){
+calc_feature_importance <- function(eigen_vectors, eigen_values, X_train) {
+
+  # Standardize eigenvectors
   eigen_vectors_standard <- scale(eigen_vectors)
+
   # Compute covariance of variables with all axes
   S <- cov(X_train, eigen_vectors_standard)
-  sum_weighted <- as.vector(t(eigen_values %*% t(S[,1:ncol(S)]))) # weighted sum (CZ)
 
-  # Standardize value of covariance (see Legendre & Legendre 1998)
-  U <- S %*% diag((eigen_values/(nrow(X_train)- 1))^(-0.5))
+  # Weighted sum (eigenvalue-weighted)
+  sum_weighted <- as.vector(t(eigen_values %*% t(S[, 1:ncol(S)])))
+
+  # Standardize covariance (see Legendre & Legendre 1998)
+  U <- S %*% diag((eigen_values / (nrow(X_train) - 1))^(-0.5))
   colnames(U) <- colnames(eigen_vectors)
 
+  # Convert to data frame (base R, no tibble/dplyr)
+  U_df <- as.data.frame(U)
 
-  U_df <- U %>%
-    data.frame()%>%
-    mutate(sum = abs(rowSums(.)),
-           sum_weighted = abs(sum_weighted))%>%
-    rownames_to_column(var = "feature")%>%
-    mutate(
-      rank_sum = rank(-sum, ties.method = "min"),  # Rank 1 = highest sum
-      rank_sum_weighted = rank(-sum_weighted, ties.method = "min")  # Rank 1 = highest sum_weighted
-    )
+  # Add feature column from row names
+  U_df$feature <- rownames(U_df)
+
+  # Add sum and sum_weighted columns
+  U_df$sum          <- abs(rowSums(U))
+  U_df$sum_weighted <- abs(sum_weighted)
+
+  # Add rank columns
+  U_df$rank_sum          <- rank(-U_df$sum,          ties.method = "min")
+  U_df$rank_sum_weighted <- rank(-U_df$sum_weighted, ties.method = "min")
+
+  # Reorder columns: feature first, then everything else
+  col_order <- c("feature", colnames(U), "sum", "sum_weighted",
+                 "rank_sum", "rank_sum_weighted")
+  U_df <- U_df[, col_order]
+
+  # Reset row names
+  rownames(U_df) <- NULL
+
   return(U_df)
 }
