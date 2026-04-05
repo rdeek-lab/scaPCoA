@@ -3,6 +3,7 @@
 export("%>%")
 export(calc_feature_importance)
 export(eigen_bray)
+export(eigen_dist)
 export(estimate_x_star)
 export(estimate_x_tilde)
 export(get.resid)

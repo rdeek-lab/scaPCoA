@@ -560,7 +560,7 @@ scapcoa <- function(obj, lambda_ls, pcoa, nPC=3, residualization = FALSE){
     }else{
       print("s+acPCoA (Residualization)")
       print("Use bray curtis for X decomposition. Obtained X_hat.")
-      eigen_output <-  eigen_bray(X, pos=TRUE)
+      eigen_output <-  eigen_dist(X, pos=TRUE)
       eigen_vectors <- eigen_output$eigenvectors
       eigen_values = eigen_output$eigenvalues
 
