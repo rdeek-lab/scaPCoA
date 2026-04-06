@@ -4,20 +4,33 @@
 \alias{scapcoa}
 \title{Supervised and Covariate-Adjusted Principal Coordinates Analysis (scaPCoA)}
 \usage{
-scapcoa(obj, lambda_ls, pcoa, nPC = 3, residualization = FALSE)
+scapcoa(
+  obj,
+  method = "bray",
+  lambda_ls = seq(0, 10, 0.5),
+  nPC = 3,
+  residualization = FALSE
+)
 }
 \arguments{
 \item{obj}{A list containing:
 \describe{
-\item{A}{A data frame or matrix of covariates.}
+\item{Z}{A data frame or matrix of covariates.}
 \item{Y}{A numeric vector of outcome values.}
-\item{X_tilde}{A numeric matrix of features (e.g., microbiome counts).}
+\item{X}{A numeric matrix of features (e.g., microbiome counts).}
 }}
 
-\item{lambda_ls}{A numeric vector of candidate lambda values for tuning.}
+\item{method}{Character. Dissimilarity method passed to
+\code{\link[vegan]{vegdist}}. Default is \code{"bray"} (Bray-Curtis).
+All supported methods: \code{"manhattan"}, \code{"euclidean"},
+\code{"canberra"}, \code{"bray"}, \code{"kulczynski"}, \code{"gower"},
+\code{"morisita"}, \code{"horn"}, \code{"mountford"}, \code{"jaccard"},
+\code{"raup"}, \code{"binomial"}, \code{"chao"}, \code{"altGower"},
+\code{"cao"}, \code{"mahalanobis"}, \code{"clark"}, \code{"chisq"},
+\code{"chord"}, \code{"hellinger"}, \code{"aitchison"},
+\code{"robust.aitchison"}.}
 
-\item{pcoa}{Logical. If \code{TRUE}, use Bray-Curtis PCoA decomposition.
-If \code{FALSE}, use centered log-ratio (CLR) transformation.}
+\item{lambda_ls}{A numeric vector of candidate lambda values for tuning.}
 
 \item{nPC}{Integer. Number of principal components to compute. Default is 3.}
 
@@ -32,11 +45,11 @@ A list with:
 \item{best.lambda}{The optimal lambda selected by tuning.}
 \item{eigen_values}{A numeric vector of eigenvalues.}
 \item{scores.partial_cor}{A matrix of partial correlations between
-PC scores and Y/A.}
+PC scores and Y/Z.}
 }
 }
 \description{
 Main function for performing scaPCoA or scaPCoA-R (with residualization).
 Finds principal coordinates that maximize association with the outcome Y
-while minimizing association with confounding covariates A.
+while minimizing association with confounding covariates Z.
 }

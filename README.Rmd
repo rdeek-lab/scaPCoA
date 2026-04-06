@@ -34,9 +34,7 @@ library(ggplot2)
 library(dplyr)
 
 data_microbe <-  data(data_microbe)
-
-lambda_ls <- seq(0, 10, 0.5)
-results <- scapcoa(data_microbe, lambda_ls, nPC = 3, pcoa = TRUE, residualization = TRUE)
+results <- scapcoa(data_microbe, residualization = TRUE, lambda_ls = c(0,0.1,1))
 
 # Estimated principal coordinates
 pc <- results$PC.scores

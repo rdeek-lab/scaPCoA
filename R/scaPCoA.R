@@ -2,7 +2,7 @@
 #' PLS Maximization Function
 #'
 #' Computes the matrix-vector product for partial least squares eigenvalue
-#' problem. Called internally by \code{\link{pedecure}}.
+#' problem. Called internally by \code{\link{scapcoa}}.
 #'
 #' @param v A numeric vector.
 #' @param args A list containing \code{X} (feature matrix) and \code{Y}
@@ -22,32 +22,32 @@ plsMax = function(v,args){
   return(out)
 }
 
-#' PeDecURe Maximization Function
+#' scapcoa Maximization Function
 #'
 #' Computes the matrix-vector product for the penalized decomposition
-#' eigenvalue problem. Called internally by \code{\link{pedecure}}.
+#' eigenvalue problem. Called internally by \code{\link{scapcoa}}.
 #'
 #' @param v A numeric vector.
 #' @param args A list containing \code{X} (feature matrix),
 #'   \code{X.penalize} (penalization matrix), \code{Y} (outcome),
-#'   \code{A} (covariates), and \code{lambda} (tuning parameter).
+#'   \code{Z} (covariates), and \code{lambda} (tuning parameter).
 #'
 #' @return A numeric vector resulting from the penalized objective function
 #'
 #' @keywords internal
-pedecureMax = function(v,args){
-  # maximization function for PeDecURe (called within function pedecure()).
+scapcoaMax = function(v,args){
+  # maximization function for scapcoa (called within function scapcoa()).
   # output: v which maximizes objective function
   X = args$X
   X.penalize = args$X.penalize
   Y = args$Y
-  A = args$A
+  Z = args$Z
   lambda = args$lambda # tuning parameter lambda
 
-  if (is.null(A)) stop("Error: A is NULL")
+  if (is.null(Z)) stop("Error: Z is NULL")
 
   XTY=crossprod(X,Y)
-  K=A%*%t(A)
+  K=Z%*%t(Z)
 
 
   out = XTY%*%t(XTY)%*%v - lambda*t(X.penalize)%*%K%*%X.penalize%*%v # based on output from calAv function in acPCA R package (Lin et al., 2016)
@@ -59,25 +59,25 @@ pedecureMax = function(v,args){
   return(out)
 }
 
-#' Penalized Decomposition for Confounding Removal (PeDecURe)
+#' Penalized Decomposition for Confounding Removal (scapcoa)
 #'
 #' Performs penalized eigen decomposition that maximizes association with the
-#' outcome Y while penalizing association with covariates A.
+#' outcome Y while penalizing association with covariates Z.
 #'
 #' @param X A numeric matrix of features (rows = samples, columns = features).
 #' @param X.penalize A numeric matrix used for the penalization term. Must have
 #'   the same number of columns as \code{X}. Can be \code{NULL} if
 #'   \code{lambda = 0}.
-#' @param A A numeric matrix of covariates to adjust for.
+#' @param Z Z numeric matrix of covariates to adjust for.
 #' @param Y A numeric vector or matrix of outcome values.
 #' @param lambda Numeric. Penalization tuning parameter. When \code{lambda = 0},
 #'   no penalization is applied (equivalent to PLS).
 #' @param nPC Integer. Number of principal components to compute.
 #' @param centerX Logical. Whether to center X. Default is \code{FALSE}.
-#' @param centerA Logical. Whether to center A. Default is \code{FALSE}.
+#' @param centerZ Logical. Whether to center Z. Default is \code{FALSE}.
 #' @param centerY Logical. Whether to center Y. Default is \code{FALSE}.
 #' @param scaleX Logical. Whether to scale X. Default is \code{FALSE}.
-#' @param scaleA Logical. Whether to scale A. Default is \code{FALSE}.
+#' @param scaleZ Logical. Whether to scale Z. Default is \code{FALSE}.
 #' @param scaleY Logical. Whether to scale Y. Default is \code{FALSE}.
 #'
 #' @return A list with:
@@ -89,10 +89,10 @@ pedecureMax = function(v,args){
 #'
 #'
 #' @importFrom RSpectra eigs_sym
-#' @export
-pedecure <- function(X, X.penalize = NULL, A, Y, lambda, nPC, centerX = FALSE, centerA = FALSE, centerY = FALSE, scaleX = FALSE, scaleA = FALSE, scaleY = FALSE) {
+#' @keywords internal
+scapcoa_decomp <- function(X, X.penalize = NULL, Z, Y, lambda, nPC, centerX = FALSE, centerZ = FALSE, centerY = FALSE, scaleX = FALSE, scaleZ = FALSE, scaleY = FALSE) {
   # Center and scale input matrices
-  A <- as.matrix(A)
+  Z <- as.matrix(Z)
   X <- as.matrix(X)
   X <- scale(X, center = centerX, scale = scaleX)
 
@@ -107,17 +107,17 @@ pedecure <- function(X, X.penalize = NULL, A, Y, lambda, nPC, centerX = FALSE, c
     X.penalize <- scale(X.penalize, center = centerX, scale = scaleX)
 
 
-    args <- list(X = X, X.penalize = X.penalize, Y = Y, A = A, lambda = lambda)
+    args <- list(X = X, X.penalize = X.penalize, Y = Y, Z = Z, lambda = lambda)
 
 
     X = args$X
     X.penalize = args$X.penalize
     Y = args$Y
-    A = args$A
-    A <- as.matrix(A)
+    Z = args$Z
+    Z <- as.matrix(Z)
     lambda= args$lambda
 
-    K <- A %*% t(A)  # Kernel matrix for penalization
+    K <- Z %*% t(Z)  # Kernel matrix for penalization
     XTY <- crossprod(X, Y)  # Compute X'Y
 
     penalized_matrix <- XTY %*% t(XTY) - lambda* t(X.penalize) %*% K %*% X.penalize
@@ -142,7 +142,7 @@ pedecure <- function(X, X.penalize = NULL, A, Y, lambda, nPC, centerX = FALSE, c
     } else {
       # Use eigs_sym for partial spectrum computation
       eig_out <- eigs_sym(
-        pedecureMax,
+        scapcoaMax,
         k = nPC,
         which = "LA",
         n = ncol(X),
@@ -179,38 +179,31 @@ pedecure <- function(X, X.penalize = NULL, A, Y, lambda, nPC, centerX = FALSE, c
         args = args,
         opts = list(tol = 1e-10, maxitr = 1e6)
       )
-
-      #niter = eig_out$niter
-      #nops = eig_out$nops
-
     }
   }
   return(eig_out)
-  # return(list(eig_out=eig_out,
-  #             niter = niter,
-  #             nops = nops))
 }
 
 
-#' Tune Lambda for PeDecURe
+#' Tune Lambda for scapcoa
 #'
 #' Selects the optimal penalization parameter lambda by maximizing the
 #' eigenvalue-weighted difference between partial correlations with the
-#' outcome Y and partial correlations with covariates A.
+#' outcome Y and partial correlations with covariates Z.
 #'
 #' @param X.orig A numeric matrix of original features.
 #' @param X.max A numeric matrix used for the maximization term.
 #' @param X.penalize A numeric matrix used for the penalization term.
 #' @param lambdas A numeric vector of candidate lambda values to evaluate.
-#' @param A A numeric matrix of covariates.
+#' @param Z A numeric matrix of covariates.
 #' @param Y A numeric vector or matrix of outcome values.
 #' @param nPC Integer. Number of principal components to compute.
 #' @param centerX Logical. Whether to center X. Default is \code{FALSE}.
 #' @param scaleX Logical. Whether to scale X. Default is \code{FALSE}.
 #' @param centerY Logical. Whether to center Y. Default is \code{FALSE}.
 #' @param scaleY Logical. Whether to scale Y. Default is \code{FALSE}.
-#' @param centerA Logical. Whether to center A. Default is \code{FALSE}.
-#' @param scaleA Logical. Whether to scale A. Default is \code{FALSE}.
+#' @param centerZ Logical. Whether to center Z. Default is \code{FALSE}.
+#' @param scaleZ Logical. Whether to scale Z. Default is \code{FALSE}.
 #' @param n.cores Integer. Number of cores for parallel computation.
 #'   Default is 1.
 #' @param plot Logical. Currently unused. Default is \code{FALSE}.
@@ -226,18 +219,18 @@ pedecure <- function(X, X.penalize = NULL, A, Y, lambda, nPC, centerX = FALSE, c
 #'   }
 #'
 #' @details
-#' For each candidate lambda, the function runs \code{\link{pedecure}},
+#' For each candidate lambda, the function runs \code{\link{scapcoa}},
 #' computes in-sample PC scores, and evaluates partial correlations via
 #' \code{\link{partial_cor}}. The tuning criterion is the mean across
 #' covariates of the eigenvalue-weighted difference:
-#' \code{|pcor(Y, PC)| - |pcor(A, PC)|}.
+#' \code{|pcor(Y, PC)| - |pcor(Z, PC)|}.
 #'
 #' @importFrom parallel mclapply
 #' @export
-pedecure.tune = function(X.orig, X.max, X.penalize, lambdas, A, Y, nPC, centerX = F, scaleX = F, centerY = F, scaleY = F, centerA = F, scaleA = F, n.cores = 1, plot = FALSE, thresh = 0.001){
+scapcoa.tune = function(X.orig, X.max, X.penalize, lambdas, Z, Y, nPC, centerX = F, scaleX = F, centerY = F, scaleY = F, centerZ = F, scaleZ = F, n.cores = 1, plot = FALSE, thresh = 0.001){
 
   sum_abs_diff = numeric(length = length(lambdas))
-  names_A = colnames(A)
+  names_Z = colnames(Z)
 
   #lambdas = sort(lambdas)  # sort in ascending order
 
@@ -254,8 +247,8 @@ pedecure.tune = function(X.orig, X.max, X.penalize, lambdas, A, Y, nPC, centerX 
       tryCatch({
 
         # Penalized decomposition using residuals for a given lambda:
-        temp_out = pedecure(X = X.max, X.penalize = X.penalize, A = A, Y = Y, lambda= lambda_i, nPC = nPC,
-                            centerX = centerX, scaleX = scaleX, centerA = centerA, scaleA = scaleA,
+        temp_out = scapcoa_decomp(X = X.max, X.penalize = X.penalize, Z = Z, Y = Y, lambda= lambda_i, nPC = nPC,
+                            centerX = centerX, scaleX = scaleX, centerZ = centerZ, scaleZ = scaleZ,
                             centerY = centerY, scaleY = scaleY)
 
         if (is.null(temp_out)){
@@ -265,19 +258,19 @@ pedecure.tune = function(X.orig, X.max, X.penalize, lambdas, A, Y, nPC, centerX 
         temp_scores = X.orig %*% temp_out$vectors
 
         # Partial correlations:
-        temp_pcor = partial_cor(scores = temp_scores, A = A, Y = Y)$partial$estimates
+        temp_pcor = partial_cor(scores = temp_scores, Z = Z, Y = Y)$partial$estimates
 
         # Weighted sum of difference of absolute values of partial correlations
         # weighted_sum_abs_diff_pcor = sapply(1:ncol(A), FUN = function(a) {
-        #   (temp_out$values / sum(temp_out$values)) %*% (abs(temp_pcor["Y", ]) - abs(temp_pcor[names_A[a], ]))
+        #   (temp_out$values / sum(temp_out$values)) %*% (abs(temp_pcor["Y", ]) - abs(temp_pcor[names_Z[a], ]))
         # })
 
-        weighted_sum_abs_diff_pcor = sapply(1:ncol(A), FUN = function(a) {
+        weighted_sum_abs_diff_pcor = sapply(1:ncol(Z), FUN = function(z) {
           if (sum(temp_out$values) == 0) {
             return(0)  # Avoid division by zero, return NA
           } else {
             return((temp_out$values / sum(temp_out$values)) %*%
-                     (abs(temp_pcor["Y", ]) - abs(temp_pcor[names_A[a], ])))
+                     (abs(temp_pcor["Y", ]) - abs(temp_pcor[names_Z[z], ])))
           }
         })
 
@@ -322,202 +315,31 @@ is_symmetric <- function(mat) {
   all.equal(mat, t(mat)) == TRUE
 }
 
-#' Estimate Covariate-Adjusted Feature Matrix (X Tilde)
-#'
-#' Estimates a reduced-dimension feature matrix that maximizes association with
-#' covariates A while penalizing association with outcome Y. This is used to
-#' obtain X tilde in the scaPCoA framework.
-#'
-#' @param X.orig A numeric matrix of original features.
-#' @param A A numeric matrix of covariates.
-#' @param Y A numeric vector or matrix of outcome values.
-#' @param npc Integer. Number of principal components to compute.
-#' @param lambda_ls A numeric vector of candidate lambda values for tuning.
-#'
-#' @return A list with:
-#'   \describe{
-#'     \item{X}{The projected feature matrix (X tilde).}
-#'     \item{d}{Number of positive eigenvalues.}
-#'     \item{lambda}{The optimal lambda selected by tuning.}
-#'   }
-#'   Returns \code{NULL} on error.
-#'
-#' @export
-estimate_x_tilde <- function(X.orig, A, Y, npc,lambda_ls) {
-  tryCatch({
-    # Scale the input matrix
-    X.orig <- scale(X.orig)
 
-    # Tune lambda
-    lambda.tune <- pedecure.tune( #PeDecURe::pedecure.tune
-      X.orig = X.orig,
-      X.max = X.orig,
-      X.penalize = X.orig,
-      lambdas = lambda_ls,
-      A = Y,
-      Y = A,
-      nPC = npc,
-      centerX=T,
-      scaleX=T
-    )
-
-    best.lambda <- lambda.tune$lambda_tune
-    print(best.lambda)
-
-    # Run pedecure
-    pedecure.out <- pedecure( #PeDecURe::pedecure
-      X = X.orig,
-      X.penalize = X.orig,
-      A = Y,
-      Y = A,
-      lambda = best.lambda,
-      nPC = npc,
-      centerX=T,
-      scaleX=T
-    )
-    #pedecure.out <-pedecure.out_ls$eig_out
-
-    v_tilde <- pedecure.out$vectors # Eigenvectors
-    eigen_values <- pedecure.out$values # Eigenvalues
-
-    epsilon <- sqrt(.Machine$double.eps)*10000
-    positive_indices <- which(eigen_values > epsilon) # Identify indices of positive eigenvalues
-
-    d <- length(positive_indices)
-    print(paste("number of positive eigenvalues:", d))
-
-    if (d == length(eigen_values)) {
-      print("Eigenvalues are all positive.")
-    }
-
-    # Project the data onto the eigenvectors
-    PC.scores <- X.orig %*% v_tilde
-
-    X_tilde <- PC.scores
-
-    print(paste("Dim:", dim(X_tilde)))
-
-    return(list(X = X_tilde, d = d, lambda = best.lambda))
-  }, error = function(e) {
-    # Handle errors and retry with reduced npc
-    message("Error encountered: ", e$message)
-    # if (npc > 1) {
-    #  new_npc <- max(3,round(npc/ 4 *3))
-    #   message("Retrying with npc = ", new_npc)
-    #   return(estimate_x_tilde(X.orig, A, Y, new_npc))
-    # } else {
-    #   stop("All retries failed. Unable to estimate X_tilde.")
-    # }
-  })
-}
-
-
-#' Estimate Outcome-Associated Feature Matrix (X Star)
-#'
-#' Estimates a reduced-dimension feature matrix that maximizes association with
-#' outcome Y while penalizing association with covariates A. This is used to
-#' obtain X star in the scaPCoA framework.
-#'
-#' @param X.orig A numeric matrix of original features.
-#' @param Y A numeric vector or matrix of outcome values.
-#' @param A A numeric matrix of covariates.
-#' @param npc Integer. Number of principal components to compute.
-#' @param lambda_ls A numeric vector of candidate lambda values for tuning.
-#'
-#' @return A list with:
-#'   \describe{
-#'     \item{X}{The projected feature matrix (X star).}
-#'     \item{d}{Number of positive eigenvalues.}
-#'     \item{lambda}{The optimal lambda selected by tuning.}
-#'   }
-#'   Returns \code{NULL} on error.
-#'
-#' @export
-estimate_x_star <- function(X.orig, Y, A, npc, lambda_ls) {
-  tryCatch({
-    # Scale the input matrix
-    X.orig <- scale(X.orig)
-
-    # Tune lambda
-    lambda.tune <- pedecure.tune(
-      X.orig = X.orig,
-      X.max = X.orig,
-      X.penalize = X.orig,
-      lambdas = lambda_ls,
-      A = A,
-      Y = Y,
-      nPC = npc,
-      centerX=T,
-      scaleX=T
-    )
-
-    best.lambda <- lambda.tune$lambda_tune
-    print(best.lambda)
-
-    # Run pedecure
-    pedecure.out <- pedecure( #PeDecURe::pedecure
-      X = X.orig,
-      X.penalize = X.orig,
-      A = A,
-      Y = Y,
-      lambda = best.lambda,
-      nPC = npc,
-      centerX=T,
-      scaleX=T
-    )
-    #pedecure.out = pedecure.out_ls$eig_out
-
-
-    v_star <- pedecure.out$vectors # Eigenvectors
-    eigen_values <- pedecure.out$values # Eigenvalues
-
-    epsilon <- sqrt(.Machine$double.eps)*10000
-    positive_indices <- which(eigen_values > epsilon) # Identify indices of positive eigenvalues
-
-    d <- length(positive_indices)
-    print(paste("number of positive eigenvalues:", d))
-
-    if (d == length(eigen_values)) {
-      print("Eigenvalues are all positive.")
-    }
-
-    # Project the data onto the eigenvectors
-    PC.scores <- X.orig %*% v_star
-
-    X_star <- PC.scores
-
-    print(paste("Dim:", dim(X_star)))
-
-    return(list(X = X_star, d = d, lambda = best.lambda))
-  }, error = function(e) {
-    # Handle errors and retry with reduced npc
-    message("Error encountered: ", e$message)
-    # if (npc > 1) {
-    #  new_npc <- max(3,round(npc/ 4 *3))
-    #   message("Retrying with npc = ", new_npc)
-    #   return(estimate_x_tilde(X.orig, A, Y, new_npc))
-    # } else {
-    #   stop("All retries failed. Unable to estimate X_tilde.")
-    # }
-  })
-}
 
 
 #' Supervised and Covariate-Adjusted Principal Coordinates Analysis (scaPCoA)
 #'
 #' Main function for performing scaPCoA or scaPCoA-R (with residualization).
 #' Finds principal coordinates that maximize association with the outcome Y
-#' while minimizing association with confounding covariates A.
+#' while minimizing association with confounding covariates Z.
 #'
 #' @param obj A list containing:
 #'   \describe{
-#'     \item{A}{A data frame or matrix of covariates.}
+#'     \item{Z}{A data frame or matrix of covariates.}
 #'     \item{Y}{A numeric vector of outcome values.}
-#'     \item{X_tilde}{A numeric matrix of features (e.g., microbiome counts).}
+#'     \item{X}{A numeric matrix of features (e.g., microbiome counts).}
 #'   }
+#' @param method Character. Dissimilarity method passed to
+#'   \code{\link[vegan]{vegdist}}. Default is \code{"bray"} (Bray-Curtis).
+#'   All supported methods: \code{"manhattan"}, \code{"euclidean"},
+#'   \code{"canberra"}, \code{"bray"}, \code{"kulczynski"}, \code{"gower"},
+#'   \code{"morisita"}, \code{"horn"}, \code{"mountford"}, \code{"jaccard"},
+#'   \code{"raup"}, \code{"binomial"}, \code{"chao"}, \code{"altGower"},
+#'   \code{"cao"}, \code{"mahalanobis"}, \code{"clark"}, \code{"chisq"},
+#'   \code{"chord"}, \code{"hellinger"}, \code{"aitchison"},
+#'   \code{"robust.aitchison"}.
 #' @param lambda_ls A numeric vector of candidate lambda values for tuning.
-#' @param pcoa Logical. If \code{TRUE}, use Bray-Curtis PCoA decomposition.
-#'   If \code{FALSE}, use centered log-ratio (CLR) transformation.
 #' @param nPC Integer. Number of principal components to compute. Default is 3.
 #' @param residualization Logical. If \code{TRUE}, use the scaPCoA-R variant
 #'   with residualized matrices. Default is \code{FALSE}.
@@ -529,19 +351,21 @@ estimate_x_star <- function(X.orig, Y, A, npc, lambda_ls) {
 #'     \item{best.lambda}{The optimal lambda selected by tuning.}
 #'     \item{eigen_values}{A numeric vector of eigenvalues.}
 #'     \item{scores.partial_cor}{A matrix of partial correlations between
-#'       PC scores and Y/A.}
+#'       PC scores and Y/Z.}
 #'   }
 #' @importFrom compositions clr
 #' @export
-scapcoa <- function(obj, lambda_ls, pcoa, nPC=3, residualization = FALSE){
+scapcoa <- function(obj,method = "bray",
+                    lambda_ls = seq(0, 10, 0.5),
+                    nPC=3, residualization = FALSE){
     results = list()
 
-    A = obj$A
+    Z = obj$Z
     Y = obj$Y
-    X = obj$X_tilde
+    X = obj$X
 
     Y <- as.matrix(Y)
-    A <- as.matrix(A)
+    Z <- as.matrix(Z)
     X <- as.matrix(X)
 
     n = nrow(X)
@@ -552,31 +376,19 @@ scapcoa <- function(obj, lambda_ls, pcoa, nPC=3, residualization = FALSE){
       y_cont = FALSE
     }
 
-    if(pcoa == FALSE){
-      print("s+acPCA (Residualization)")
-      X_hat <- clr(X) #centerd log transformation
-      X_hat <- X_hat[, apply(X_hat, 2, var) != 0]
-      dim(X_hat)
-    }else{
-      print("s+acPCoA (Residualization)")
-      print("Use bray curtis for X decomposition. Obtained X_hat.")
-      eigen_output <-  eigen_dist(X, pos=TRUE)
-      eigen_vectors <- eigen_output$eigenvectors
-      eigen_values = eigen_output$eigenvalues
+    eigen_output <-  eigen_dist(X, method = method)
+    eigen_vectors <- eigen_output$eigenvectors
+    eigen_values = eigen_output$eigenvalues
 
-      X_hat <- eigen_vectors %*% diag(sqrt(eigen_values))
-
-      dim(X_hat)
-
-      X_hat_train = X_hat
-
-    }
-
+    X_hat <- eigen_vectors %*% diag(sqrt(eigen_values))
+    X_hat_train = X_hat
     X.orig = X_hat
+
+    m = ncol(X_hat)
 
     if(residualization == TRUE){
       print("Run scaPCoA-R")
-      resid.dat = get.resid(X.orig,Y, A)
+      resid.dat = get_resid(X.orig,Y, Z)
       X.max = resid.dat$X.star
       X.penalize = resid.dat$X.tilde
     }else{
@@ -585,45 +397,44 @@ scapcoa <- function(obj, lambda_ls, pcoa, nPC=3, residualization = FALSE){
       X.penalize =X_hat
     }
 
-    lambda.tune = pedecure.tune(X.orig = X.orig,
+
+    lambda.tune = scapcoa.tune(X.orig = X.orig,
                                   X.max = X.max,
                                   X.penalize = X.penalize,
                                   lambdas = lambda_ls,
-                                  A = A,
+                                  Z = Z,
                                   Y = Y,
-                                  nPC = nPC, centerX = T, scaleX = T)
+                                  nPC = m, centerX = T, scaleX = T)
 
       best.lambda = lambda.tune$lambda_tune
       print(paste('Best Lambda from tuning:',best.lambda))
 
-      pedecure.out = pedecure(X = X.max,
+      scapcoa.out = scapcoa_decomp(X = X.max,
                               X.penalize = X.penalize,
-                              A = A,
+                              Z = Z,
                               Y = Y,
                               lambda = best.lambda,
-                              nPC = nPC, centerX = T, scaleX = T)
+                              nPC = m, centerX = T, scaleX = T)
 
-      v_hat = pedecure.out$vectors
+      v_hat = scapcoa.out$vectors
       PC.scores = X.orig%*%v_hat
-      eigen_values <- pedecure.out$values
+      eigen_values <- scapcoa.out$values
 
       # Partial Correlation
-      # Look at correlations between the first few PC scores and the nuisance variables (A1, A2, Y)
-      cor.scores = partial_cor(PC.scores, A, Y)
+      # Look at correlations between the first few PC scores and the nuisance variables (Z1, Z2, Y)
+      cor.scores = partial_cor(PC.scores, Z, Y)
 
       scores.partial_cor = cor.scores$partial$estimates
 
-      l = dim(A)[2]
-
       # Loop for y and PCs
-      for (j in 1:3) {  # Assuming 3 principal components (PC1, PC2, PC3)
-        results[[paste0("pcor_y_pc", j)]] <- abs(scores.partial_cor[l + 1, j])
+      for (j in 1:m) {  # Assuming 3 principal components (PC1, PC2, PC3)
+        results[[paste0("pcor_y_pc", j)]] <- abs(scores.partial_cor[ncol(Z) + 1, j])
       }
 
-      # Loop for all A (a1 to a10) and PCs
-      for (i in 1:l) {  # Loop through A1, A2, ..., Al
-        for (j in 1:3) {  # Loop through PC1, PC2, PC3
-          results[[paste0("pcor_a", i, "_pc", j)]] <- abs(scores.partial_cor[i, j])
+      # Loop for all Z and PCs
+      for (i in 1:ncol(Z)) {  # Loop through Z1, Z2, ..., Zl
+        for (j in 1:m) {  # Loop through PC1, PC2, PC3
+          results[[paste0("pcor_z", i, "_pc", j)]] <- abs(scores.partial_cor[i, j])
         }
       }
 

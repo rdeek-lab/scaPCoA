@@ -17,6 +17,6 @@ A numeric vector resulting from \code{X'YY'X * v}.
 }
 \description{
 Computes the matrix-vector product for partial least squares eigenvalue
-problem. Called internally by \code{\link{pedecure}}.
+problem. Called internally by \code{\link{scapcoa}}.
 }
 \keyword{internal}

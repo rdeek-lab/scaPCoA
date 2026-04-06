@@ -21,7 +21,7 @@ check_correlation <- function(cor) {
 #'
 #' @param scores A numeric matrix of principal coordinate scores (rows = samples,
 #'   columns = principal coordinates).
-#' @param A A numeric matrix of covariates. Column names are used to label
+#' @param Z A numeric matrix of covariates. Column names are used to label
 #'   results.
 #' @param Y A numeric vector of outcome values (binary or continuous).
 #'
@@ -33,7 +33,7 @@ check_correlation <- function(cor) {
 #'           each covariate and Y. Columns correspond to each PC.}
 #'         \item{statistics}{A matrix of t-statistics (currently not populated).}
 #'         \item{df}{Degrees of freedom for partial correlation tests
-#'           (\code{n - 2 - ncol(A)}).}
+#'           (\code{n - 2 - ncol(Z)}).}
 #'       }
 #'     }
 #'   }
@@ -61,7 +61,7 @@ check_correlation <- function(cor) {
 #' @importFrom rstatix anova_test
 #' @importFrom stats cor sd
 #' @export
-partial_cor = function(scores, A, Y){
+partial_cor = function(scores, Z, Y){
   if(is.character(Y)){
     print("Change Y from character to numeric")
   }
@@ -69,62 +69,61 @@ partial_cor = function(scores, A, Y){
   # estimate partial (+ marginal) correlations between each PC score and Y|A and A|Y
   # output: list of partial and marginal correlations between each PC score and A and Y
   scores = as.matrix(scores)
-  A = as.matrix(A)
+  Z = as.matrix(Z)
   colnames(scores)  = paste0("PC",1:ncol(scores))
   n = nrow(scores)
-  df.partial = n-2-ncol(A) # n - 2 - number of variables conditioning on
 
-  pcor.Xv.j.Y.given.A = vector(mode = "numeric",length = ncol(scores))
-  pcor.Xv.j.A.given.Y = rep(list(vector(mode = "numeric", length = ncol(scores))), ncol(A))
-  names(pcor.Xv.j.A.given.Y) = colnames(A)
+  pcor.Xv.j.Y.given.Z = vector(mode = "numeric",length = ncol(scores))
+  pcor.Xv.j.Z.given.Y = rep(list(vector(mode = "numeric", length = ncol(scores))), ncol(Z))
+  names(pcor.Xv.j.Z.given.Y) = colnames(Z)
 
-  t.statistics = matrix(nrow=(ncol(A) + 1),ncol=ncol(scores))
-  rownames(t.statistics) = c(paste0(colnames(A)),"Y")
+  t.statistics = matrix(nrow=(ncol(Z) + 1),ncol=ncol(scores))
+  rownames(t.statistics) = c(paste0(colnames(Z)),"Y")
   colnames(t.statistics) = paste0("PC",1:ncol(scores))
 
   for (j in 1:ncol(scores)) {
 
-    omega.j <- matrix(0, ncol(A) + 2, ncol(A) + 2)  # Initialize omega.j
-    colnames(omega.j) <- rownames(omega.j) <- c(colnames(A), "Y", paste0("Xv", j))
+    omega.j <- matrix(0, ncol(Z) + 2, ncol(Z) + 2)  # Initialize omega.j
+    colnames(omega.j) <- rownames(omega.j) <- c(colnames(Z), "Y", paste0("Xv", j))
 
     # A and Y
-    for (a in 1:ncol(A)) {
-      # Check if A[, a] has zero standard deviation
-      if (is.numeric(A[, a]) && sd(A[, a]) == 0) {
-        stop(paste("Error: Column", a, "in A has no standard deviation (all values are the same)."))
+    for (z in 1:ncol(Z)) {
+      # Check if Z[, z] has zero standard deviation
+      if (is.numeric(Z[, z]) && sd(Z[, z]) == 0) {
+        stop(paste("Error: Column", z, "in Z has no standard deviation (all values are the same)."))
       }
 
       is_Y_binary <- length(unique(Y)) == 2
-      is_A_binary <- length(unique(A[, a])) == 2
-      is_A_categorical <- is.factor(A[, a]) || is.character(A[, a]) || (!is_A_binary && length(unique(A[, a])) <= 10)
+      is_Z_binary <- length(unique(Z[, z])) == 2
+      is_Z_categorical <- is.factor(Z[, z]) || is.character(Z[, z]) || (!is_Z_binary && length(unique(Z[, z])) <= 10)
 
 
-      if (is_A_binary && is_Y_binary) {
-        #print("Binary Ai and Binary Y: MCC")
+      if (is_Z_binary && is_Y_binary) {
+        #print("Binary Zi and Binary Y: MCC")
         Y_vector = as.vector(Y)
         Y_vector <- as.numeric(as.character(Y_vector))
 
-        cor_i = mcc(A[,a], Y_vector)
-      }else if(is_A_binary && !is_Y_binary){
-        #print("A is Binary, Y is Continuous: Point-Biserial Correlation")
-        cor_i = biserial.cor(Y, A[, a],use = "all.obs", level = 2)
+        cor_i = mcc(Z[,z], Y_vector)
+      }else if(is_Z_binary && !is_Y_binary){
+        #print("Z is Binary, Y is Continuous: Point-Biserial Correlation")
+        cor_i = biserial.cor(Y, Z[, z],use = "all.obs", level = 2)
 
-      }else if (!is_A_binary && is_Y_binary) {
-        if (is_A_categorical) {
-          # Categorical A, Binary Y: Eta Squared
-          #print("Categorical A, Binary Y: Eta Squared")
-          df_tmp <- data.frame(score = as.vector(Y), group = as.factor(A[, a]))
+      }else if (!is_Z_binary && is_Y_binary) {
+        if (is_Z_categorical) {
+          # Categorical Z, Binary Y: Eta Squared
+          #print("Categorical Z, Binary Y: Eta Squared")
+          df_tmp <- data.frame(score = as.vector(Y), group = as.factor(Z[, z]))
 
           test <- anova_test(data = df_tmp, dv = score, between = group)
           cor_i <-  test$ges[1]
         } else {
-          #print("Continuous A, Binary Y: Point-Biserial")
-          cor_i <- biserial.cor(A[, a], Y, use = "all.obs", level = 2)
+          #print("Continuous Z, Binary Y: Point-Biserial")
+          cor_i <- biserial.cor(Z[, z], Y, use = "all.obs", level = 2)
         }
 
-      } else if (is_A_categorical && !is_Y_binary) {
+      } else if (is_Z_categorical && !is_Y_binary) {
         # Categorical A, Continuous Y: Eta Squared
-        df_tmp <- data.frame(score = as.vector(Y), group = as.factor(A[, a]))
+        df_tmp <- data.frame(score = as.vector(Y), group = as.factor(Z[, z]))
         test <- anova_test(data = df_tmp, dv = score, between = group)
 
         cor_i <- test$ges[1]
@@ -132,10 +131,10 @@ partial_cor = function(scores, A, Y){
       }else {
         # Both Ai and Y are continuous: Use Pearson Correlation
         #print("Continuous Ai and Continuous Y: Pearson Correlation")
-        cor_i = cor(A[, a], Y, method = "pearson")
+        cor_i = cor(Z[, z], Y, method = "pearson")
       }
       check_correlation(cor_i)
-      omega.j[a, ncol(A) + 1] <- omega.j[ncol(A) + 1, a] <- cor_i
+      omega.j[z, ncol(Z) + 1] <- omega.j[ncol(Z) + 1, z] <- cor_i
     }
 
 
@@ -144,25 +143,25 @@ partial_cor = function(scores, A, Y){
       #print("Y is Binary: Point-Biserial Correlation with scores")
       cor_i = biserial.cor( scores[, j],Y, use = "all.obs", level = 2)
       check_correlation(cor_i)
-      omega.j[ncol(A) + 1, ncol(A) + 2] <- omega.j[ncol(A) + 2, ncol(A) + 1] <- cor_i
+      omega.j[ncol(Z) + 1, ncol(Z) + 2] <- omega.j[ncol(Z) + 2, ncol(Z) + 1] <- cor_i
     } else {
       #print("Y is Continuous: Pearson Correlation with scores")
       cor_i = cor(Y, scores[, j], method = "pearson")
       check_correlation(cor_i)
-      omega.j[ncol(A) + 1, ncol(A) + 2] <- omega.j[ncol(A) + 2, ncol(A) + 1] <- cor_i
+      omega.j[ncol(Z) + 1, ncol(Z) + 2] <- omega.j[ncol(Z) + 2, ncol(Z) + 1] <- cor_i
     }
 
     # Compute correlation between scores and A
-    for (a in 1:ncol(A)) {
-      if (length(table(A[, a])) == 2) {
-        #print("Ai is Binary: Point-Biserial Correlation with scores")
-        cor_i =biserial.cor(scores[, j], A[, a], use = "all.obs", level = 2)
+    for (z in 1:ncol(Z)) {
+      if (length(table(Z[, z])) == 2) {
+        #print("Zi is Binary: Point-Biserial Correlation with scores")
+        cor_i =biserial.cor(scores[, j], Z[, z], use = "all.obs", level = 2)
         check_correlation(cor_i)
-        omega.j[a, ncol(A) + 2] <- omega.j[ncol(A) + 2, a] <- cor_i
-      } else if(length(table(A[, a])) > 2 && length(table(A[, a])) < 10 ){
-        # Ai is Categorical with >2 levels: use eta squared (0 to 1)
-        print("A is categorical with > 2 levels. Use ANOVA eta score.")
-        df_tmp <- data.frame(score = scores[, j], group = A[, a])
+        omega.j[z, ncol(Z) + 2] <- omega.j[ncol(Z) + 2, z] <- cor_i
+      } else if(length(table(Z[, z])) > 2 && length(table(Z[, z])) < 10 ){
+        # Zi is Categorical with >2 levels: use eta squared (0 to 1)
+        #print("Z is categorical with > 2 levels. Use ANOVA eta score.")
+        df_tmp <- data.frame(score = scores[, j], group = Z[, z])
 
         result <- tryCatch({
           test <- anova_test(data = df_tmp, dv = score, between = group)
@@ -170,43 +169,43 @@ partial_cor = function(scores, A, Y){
           check_correlation(eta_sq)
           eta_sq
         }, error = function(e) {
-          warning(paste("ANOVA failed for A column", a))
+          warning(paste("ANOVA failed for Z column", z))
           NA
         })
 
-        omega.j[a, ncol(A) + 2] <- omega.j[ncol(A) + 2, a] <- result
+        omega.j[z, ncol(Z) + 2] <- omega.j[ncol(Z) + 2, z] <- result
 
       }else {
         #print("Ai is Continuous: Pearson Correlation with scores")
-        cor_i = cor(A[, a], scores[, j], method = "pearson")
+        cor_i = cor(Z[, z], scores[, j], method = "pearson")
         check_correlation(cor_i)
 
-        omega.j[a, ncol(A) + 2] <- omega.j[ncol(A) + 2, a] <- cor_i
+        omega.j[z, ncol(Z) + 2] <- omega.j[ncol(Z) + 2, z] <- cor_i
       }
     }
 
     # Fill in the correlations among the A variables
-    for (a in 1:ncol(A)) {
-      for (b in a:ncol(A)) {  # We only fill in the upper triangle (or lower triangle since it's symmetric)
-        if (a != b) {  # Skip diagonal as it's already filled with variance
-          if (length(table(A[, a])) == 2 && length(table(A[, b])) == 2) {
-            #print("Both Ai and Ab are Binary: Matthews Correlation Coefficient (MCC)")
-            omega.j[a, b] <- omega.j[b, a] <- mcc(A[, a], A[, b])
-          } else if (length(table(A[, a])) == 2 && length(table(A[, b])) > 2) {
-            #print("Ai is Binary, Ab is Continuous: Point-Biserial Correlation")
-            cor_i = biserial.cor(A[, b], A[, a], use = "all.obs", level = 2)
+    for (z1 in 1:ncol(Z)) {
+      for (z2 in z1:ncol(Z)) {  # We only fill in the upper triangle (or lower triangle since it's symmetric)
+        if (z1 != z2) {  # Skip diagonal as it's already filled with variance
+          if (length(table(Z[, z1])) == 2 && length(table(Z[, z2])) == 2) {
+            #print("Both Z1 and Z2 are Binary: Matthews Correlation Coefficient (MCC)")
+            omega.j[z1, z2] <- omega.j[z2, z1] <- mcc(Z[, z1], Z[, z2])
+          } else if (length(table(Z[, z1])) == 2 && length(table(Z[, z2])) > 2) {
+            #print("Z1 is Binary, Z2 is Continuous: Point-Biserial Correlation")
+            cor_i = biserial.cor(Z[, z2], Z[, z1], use = "all.obs", level = 2)
             check_correlation(cor_i)
-            omega.j[a, b] <- omega.j[b, a] <- cor_i
-          } else if (length(table(A[, a])) > 2 && length(table(A[, b])) == 2) {
-            #print("Ai is Continuous, Ab is Binary: Point-Biserial Correlation")
-            cor_i = biserial.cor(A[, a], A[, b], use = "all.obs", level = 2)
+            omega.j[z1, z2] <- omega.j[z2, z1] <- cor_i
+          } else if (length(table(Z[, z1])) > 2 && length(table(Z[, z2])) == 2) {
+            #print("Z1 is Continuous, Z2 is Binary: Point-Biserial Correlation")
+            cor_i = biserial.cor(Z[, z1], Z[, z2], use = "all.obs", level = 2)
             check_correlation(cor_i)
-            omega.j[a, b] <- omega.j[b, a] <- cor_i
+            omega.j[z1, z2] <- omega.j[z2, z1] <- cor_i
           } else {
-            #print("Both Ai and Ab are Continuous: Pearson Correlation")
-            cor_i = cor(A[, a], A[, b], method = "pearson")
+            #print("Both Z1 and Z2 are Continuous: Pearson Correlation")
+            cor_i = cor(Z[, z1], Z[, z2], method = "pearson")
             check_correlation(cor_i)
-            omega.j[a, b] <- omega.j[b, a] <- cor_i
+            omega.j[z1, z2] <- omega.j[z2, z1] <- cor_i
           }
         }
       }
@@ -220,28 +219,30 @@ partial_cor = function(scores, A, Y){
     det_omega <- det(omega.j)
     if (abs(det_omega) < 1e-10) {
       print(paste("Determinant =", det_omega, "Matrix is nearly singular, performing Moore-Penrose Pseudoinverse"))
-      P.j <- ginv(omega.j)
+      #P.j <- ginv(omega.j)
+      omega.j_reg <- omega.j + diag(1e-6, nrow(omega.j))
+      P.j <- ginv(omega.j_reg)
+      dimnames(P.j) <- dimnames(omega.j)
     } else {
       P.j <- solve(omega.j)
     }
 
     # Compute partial correlation between scores and Y given A
-    pcor.Xv.j.Y.given.A[j] <- -P.j["Y", ncol(A) + 2] / sqrt(P.j["Y", "Y"] * P.j[ncol(A) + 2, ncol(A) + 2])
+    pcor.Xv.j.Y.given.Z[j] <- -P.j["Y", ncol(Z) + 2] / sqrt(P.j["Y", "Y"] * P.j[ncol(Z) + 2, ncol(Z) + 2])
 
     # Compute partial correlations between scores and each A given Y
-    for (a in 1:ncol(A)) {
-      pcor.Xv.j.A.given.Y[[colnames(A)[a]]][j] <- -P.j[colnames(A)[a], ncol(A) + 2] / sqrt(P.j[colnames(A)[a], colnames(A)[a]] * P.j[ncol(A) + 2, ncol(A) + 2])
+    for (z in 1:ncol(Z)) {
+      pcor.Xv.j.Z.given.Y[[colnames(Z)[z]]][j] <- -P.j[colnames(Z)[z], ncol(Z) + 2] / sqrt(P.j[colnames(Z)[z], colnames(Z)[z]] * P.j[ncol(Z) + 2, ncol(Z) + 2])
     }
   }
 
-  partial.correlations = rbind(do.call("rbind",pcor.Xv.j.A.given.Y),
-                               Y = pcor.Xv.j.Y.given.A)
+  partial.correlations = rbind(do.call("rbind",pcor.Xv.j.Z.given.Y),
+                               Y = pcor.Xv.j.Y.given.Z)
 
   colnames(partial.correlations) = paste0("PC",1:ncol(scores))
 
   out.partial = list(estimates = partial.correlations,
-                     statistics = t.statistics,
-                     df = df.partial)
+                     statistics = t.statistics)
 
   return(list(partial = out.partial))
 

@@ -4,13 +4,13 @@
 \alias{partial_cor}
 \title{Compute Partial Correlations Between PC Scores, Outcome, and Covariates}
 \usage{
-partial_cor(scores, A, Y)
+partial_cor(scores, Z, Y)
 }
 \arguments{
 \item{scores}{A numeric matrix of principal coordinate scores (rows = samples,
 columns = principal coordinates).}
 
-\item{A}{A numeric matrix of covariates. Column names are used to label
+\item{Z}{A numeric matrix of covariates. Column names are used to label
 results.}
 
 \item{Y}{A numeric vector of outcome values (binary or continuous).}
@@ -24,7 +24,7 @@ A list containing:
 each covariate and Y. Columns correspond to each PC.}
 \item{statistics}{A matrix of t-statistics (currently not populated).}
 \item{df}{Degrees of freedom for partial correlation tests
-(\code{n - 2 - ncol(A)}).}
+(\code{n - 2 - ncol(Z)}).}
 }
 }
 }
