@@ -51,7 +51,6 @@ data(data_microbe)
 
 lambda_ls <- seq(0, 10, 0.5)
 results <- scapcoa(data_microbe, lambda_ls, nPC = 3, pcoa = TRUE, residualization = TRUE)
-#> [1] "s+acPCoA (Residualization)"
 #> [1] "Use bray curtis for X decomposition. Obtained X_hat."
 #> [1] "Number of features in X_hat: 55"
 #> [1] "Run scaPCoA-R"
