@@ -105,7 +105,7 @@ pc %>%
   scale_color_manual(values = c("Case" = "#C84D6A", "Control" = "#A6C36F"))
 ```
 
-<img src="man/figures/README-plot-1.png" alt="" width="100%" />
+<img src="man/figures/README-plot-1.png" alt="" width="70%" />
 
 ## Authors
 
