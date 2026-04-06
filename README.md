@@ -47,18 +47,10 @@ library(scaPCoA)
 library(ggplot2)
 library(dplyr)
 
-obj <- generate_data(seed = 1, n = 100, p = 200, l = 3, y_type = "bin",
-                     zinLDA_min = 100, zinLDA_max = 1000)
-#> [1] "Generate data with seed = 1"
-#> [1] "N.d:100-1000"
-#> [1] "Simulate ZINLDA"
-#> [1] "Exclude features with all zeros. Exclude features with variance of zero.\n              Number of features =  191"
-#> [1] "Randomly select 50 % of the columns in X"
-#> [1] "Exclude features with all zeros. Exclude features with variance of zero.\n              Number of features =  191"
-#> [1] "W: 15 features with high correlations."
+data(data_microbe)
 
 lambda_ls <- seq(0, 10, 0.5)
-results <- scapcoa(obj, lambda_ls, nPC = 3, pcoa = TRUE, residualization = TRUE)
+results <- scapcoa(data_microbe, lambda_ls, nPC = 3, pcoa = TRUE, residualization = TRUE)
 #> [1] "s+acPCoA (Residualization)"
 #> [1] "Use bray curtis for X decomposition. Obtained X_hat."
 #> [1] "Number of features in X_hat: 55"
@@ -98,7 +90,7 @@ eigen_values <- results$eigen_values
 ``` r
 pc %>%
   as.data.frame() %>%
-  mutate(Y = ifelse(obj$Y == 1, "Case", "Control")) %>%
+  mutate(Y = ifelse(data_microbe$Y == 1, "Case", "Control")) %>%
   ggplot(aes(x = V1, y = V2, color = Y, shape = Y)) +
   geom_point(size = 3.5, alpha = 1) +
   stat_ellipse(aes(group = Y), linetype = 1) +
