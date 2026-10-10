@@ -1,36 +1,30 @@
 
 # scaPCoA: Supervised and Covariate-Adjusted Principal Coordinate Analysis
 
-Given that the gut microbiome has been shown to play a critical role in
-human health and disease, discerning the relationship between microbial
-features and disease outcomes is often of interest in microbiome
-studies. Most often, this is in terms of visualization of trends in the
-data and/or predictive modeling. Dimension reduction techniques such as
-principal coordinate analysis (PCoA), an alternative to PCA that relies
-on non-Euclidean pairwise distances between samples, provides a
-lower-dimensional representation for visualization but does not
-incorporate outcome-related information. Therefore, the
-lower-dimensional principal coordinates may have poor performance
-visualizing outcome differences, as well as poor performance in
-downstream disease prediction tasks. Moreover, covariates, such as
-demographics, lifestyle factors, and technical variation, can obscure
-true biological signals, leading to spurious associations. To address
-this, we propose a supervised and covariate-adjusted PCoA algorithm. By
-minimizing the influence of nuisance variables, our method produces
-lower-dimensional representations that better separate disease outcomes
-in visualizations and result in improved accuracy in regression and
-classification models. We demonstrate the effectiveness of the proposed
-method and highlight its ability to extract meaningful
-microbiome-disease associations while mitigating nuisance effects
-through simulations and application to real 16S rRNA and metagenomic
-sequencing studies.
+Given that the gut microbiome has been shown to play a critical role in human health, discerning the relationship between microbial taxa and disease outcomes or phenotypes is of interest. Often, this involves association testing, predictive modeling, and visualizing trends in the data. Principal coordinates analysis (`PCoA`) is a commonly used dimension reduction technique in microbiome studies. PCoA relies on pairwise distances between samples and serves as a nonlinear alternative to the classic principal component analysis when non-Euclidean distances are used. Its low-dimensional embeddings provide intuitive visualizations but do not incorporate outcome-related information. Therefore, the low-dimensional principal coordinates may have poor performance in visualizing outcome differences, as well as in downstream disease prediction tasks. Additionally, covariates, such as demographics, lifestyle factors, and technical artifacts, can obscure true biological signals, leading to masked or spurious associations and limited generalizability. To address these limitations, we propose a supervised and covariate adjusted PCoA algorithm (`scaPCoA`). By utilizing outcome information, while simultaneously minimizing the influence of nuisance variables, our method produces low-dimensional embeddings that better separate disease outcomes in visualizations and result in improved accuracy in downstream regression and classification tasks. We demonstrate the effectiveness of the proposed method and highlight its ability to extract important associations between the microbiome and disease outcomes while mitigating nuisance variation through simulations and application to real microbiome profiling studies.
 
 ## Installation
 
-You can install the development version of scaPCoA:
+You can install the development version of **scaPCoA** from GitHub using either `remotes` or `pak`.
 
-``` r
-remotes::install_github("crystalzang/scaPCoA")
+**Option 1: Using `remotes`**
+
+```r
+remotes::install_github("rdeek-lab/scaPCoA")
+```
+
+**Option 2: Using `pak`**
+
+If `pak` is not installed, follow its [installation instructions](https://pak.r-lib.org/#installation).
+
+```r
+pak::pkg_install("rdeek-lab/scaPCoA")
+```
+
+After installation, load the package:
+
+```r
+library(scaPCoA)
 ```
 
 ## Usage
@@ -39,43 +33,17 @@ remotes::install_github("crystalzang/scaPCoA")
     coordinates.
 2.  **Prediction**: `scapcoa` can be used to make predictions on outcome
     (continuous or binary) given microbiome and covariates.
+3. **Example data**: `data_microbe` is a simulated dataset containing microbial abundances (`X`), an outcome (`Y`), and covariates (`Z`), and `features_signals` indicating which microbial features are associated with the outcome. These known signals can be used to evaluate feature recovery. This example data can be used to explore the package's visualization and prediction functions. Load the dataset with:
 
+```{r}
+data(data_microbe)
+```
+   
 ## Example
+Set `residualization = FALSE` to run scaPCoA or `residualization = TRUE` to run scaPCoA-R. The example below runs scaPCoA-R using Bray–Curtis dissimilarities.
 
 ``` r
-library(scaPCoA)
-library(ggplot2)
-library(dplyr)
-
-data(data_microbe)
-
-lambda_ls <- seq(0, 10, 0.5)
-results <- scapcoa(data_microbe, lambda_ls, nPC = 3, pcoa = TRUE, residualization = TRUE)
-#> [1] "Use bray curtis for X decomposition. Obtained X_hat."
-#> [1] "Number of features in X_hat: 55"
-#> [1] "Run scaPCoA-R"
-#> [1] "lambda= 0"
-#> [1] "lambda= 0.5"
-#> [1] "lambda= 1"
-#> [1] "lambda= 1.5"
-#> [1] "lambda= 2"
-#> [1] "lambda= 2.5"
-#> [1] "lambda= 3"
-#> [1] "lambda= 3.5"
-#> [1] "lambda= 4"
-#> [1] "lambda= 4.5"
-#> [1] "lambda= 5"
-#> [1] "lambda= 5.5"
-#> [1] "lambda= 6"
-#> [1] "lambda= 6.5"
-#> [1] "lambda= 7"
-#> [1] "lambda= 7.5"
-#> [1] "lambda= 8"
-#> [1] "lambda= 8.5"
-#> [1] "lambda= 9"
-#> [1] "lambda= 9.5"
-#> [1] "lambda= 10"
-#> [1] "Best Lambda from tuning: 10"
+results <- scapcoa(obj = data_microbe, method = "bray", lambda_ls = seq(0, 10, 0.5), nPC = 3, residualization = TRUE)
 
 # Estimated principal coordinates
 pc <- results$PC.scores
@@ -103,8 +71,10 @@ pc %>%
   theme_minimal() +
   scale_color_manual(values = c("Case" = "#C84D6A", "Control" = "#A6C36F"))
 ```
-
 <img src="man/figures/README-plot-1.png" alt="" width="70%" />
+
+
+Additionally, the columns of `pc` contain the estimated principal coordinates. The first few columns (e.g., `pc[, 1:3]`) can be used as predictive features in a regression or classification model for the outcome.
 
 ## Authors
 
@@ -112,3 +82,5 @@ pc %>%
 
 Department of Biostatistics and Data Science, University of Pittsburgh
 School of Public Health
+
+The paper has been accepted for publication in *Briefings in Bioinformatics*.
