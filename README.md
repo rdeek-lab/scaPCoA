@@ -1,7 +1,7 @@
 
 # scaPCoA: Supervised and Covariate-Adjusted Principal Coordinate Analysis
 
-Given that the gut microbiome has been shown to play a critical role in human health, discerning the relationship between microbial taxa and disease outcomes or phenotypes is of interest. Often, this involves association testing, predictive modeling, and visualizing trends in the data. Principal coordinates analysis (**PCoA**) is a commonly used dimension reduction technique in microbiome studies. PCoA relies on pairwise distances between samples and serves as a nonlinear alternative to the classic principal component analysis when non-Euclidean distances are used. Its low-dimensional embeddings provide intuitive visualizations but do not incorporate outcome-related information. Therefore, the low-dimensional principal coordinates may have poor performance in visualizing outcome differences, as well as in downstream disease prediction tasks. Additionally, covariates, such as demographics, lifestyle factors, and technical artifacts, can obscure true biological signals, leading to masked or spurious associations and limited generalizability. To address these limitations, we propose a supervised and covariate adjusted PCoA algorithm (**scaPCoA**). By utilizing outcome information, while simultaneously minimizing the influence of nuisance variables, our method produces low-dimensional embeddings that better separate disease outcomes in visualizations and result in improved accuracy in downstream regression and classification tasks. We demonstrate the effectiveness of the proposed method and highlight its ability to extract important associations between the microbiome and disease outcomes while mitigating nuisance variation through simulations and application to real microbiome profiling studies.
+Given that the gut microbiome has been shown to play a critical role in human health, discerning the relationship between microbial taxa and disease outcomes or phenotypes is of interest. Often, this involves association testing, predictive modeling, and visualizing trends in the data. Principal coordinates analysis (**PCoA**) is a commonly used dimension reduction technique in microbiome studies. PCoA relies on pairwise distances between samples and serves as a nonlinear alternative to the classic principal component analysis when non-Euclidean distances are used. Its low-dimensional embeddings provide intuitive visualizations but do not incorporate outcome-related information. Therefore, the low-dimensional principal coordinates may have poor performance in visualizing outcome differences, as well as in downstream disease prediction tasks. Additionally, covariates, such as demographics, lifestyle factors, and technical artifacts, can obscure true biological signals, leading to masked or spurious associations and limited generalizability. To address these limitations, we propose a supervised and covariate-adjusted PCoA algorithm (**scaPCoA**). By utilizing outcome information, while simultaneously minimizing the influence of nuisance variables, our method produces low-dimensional embeddings that better separate disease outcomes in visualizations and result in improved accuracy in downstream regression and classification tasks. We demonstrate the effectiveness of the proposed method and highlight its ability to extract important associations between the microbiome and disease outcomes while mitigating nuisance variation through simulations and application to real microbiome profiling studies.
 
 ## Installation
 
@@ -28,19 +28,31 @@ library(scaPCoA)
 ```
 
 ## Usage
+`scapcoa()` is the main function for running scaPCoA and scaPCoA-R.
 
-1.  **Visualization**: `scapcoa` can be used to visualize principal
-    coordinates.
-2.  **Prediction**: `scapcoa` can be used to make predictions on outcome
-    (continuous or binary) given microbiome and covariates.
-3. **Example data**: `data_microbe` is a simulated dataset containing microbial abundances (`X`), an outcome (`Y`), and covariates (`Z`), and `features_signals` indicating which microbial features are associated with the outcome. These known signals can be used to evaluate feature recovery. This example data can be used to explore the package's visualization and prediction functions. Load the dataset with:
+1.  **Visualization**: The coordinates estimated by `scapcoa` can be plotted to visualize outcome-associated patterns.
+
+2.  **Prediction**: The coordinates estimated by `scapcoa` can be used as predictive features in downstream regression or classification models for
+    continuous or binary outcomes. 
+
+
+
+### Input format and example data
+
+`scapcoa()` accepts a list containing:
+
+- `X`: a numeric microbial abundance matrix, with samples in rows and features in columns.
+- `Y`: a continuous or binary outcome.
+- `Z`: a numeric covariate matrix, with samples in rows. Encode categorical covariates using dummy variables (e.g., one indicator per non-reference category).
+
+The simulated dataset `data_microbe` follows this format and additionally includes `features_signals`, which identifies the outcome-associated microbial features. This additional information is provided for reference and is not required by `scapcoa()`.
 
 ```{r}
 data(data_microbe)
 ```
-   
+
 ## Example
-Set `residualization = FALSE` to run scaPCoA or `residualization = TRUE` to run scaPCoA-R. The residualization step in scaPCoA-R is designed to help separate outcome-associated variation from covariate-associated variation. The example below runs scaPCoA-R using Bray–Curtis dissimilarities.
+Set `residualization = FALSE` to run scaPCoA or `residualization = TRUE` to run scaPCoA-R. The residualization step in scaPCoA-R is designed to help separate outcome-associated variation from covariate-associated variation. The example below runs scaPCoA using Bray–Curtis dissimilarities.
 
 ``` r
 results <- scapcoa(obj = data_microbe, 
@@ -52,12 +64,12 @@ results <- scapcoa(obj = data_microbe,
 # Estimated principal coordinates
 pc <- results$PC.scores
 
-# Eigen values
+# Eigenvalues
 eigen_values <- results$eigen_values
 ```
 
 ## Results
-
+The first two principal coordinates are plotted below, with samples colored and shaped by outcome (case or control). This visualization illustrates the outcome-associated patterns captured by scaPCoA in the simulated microbiome data.
 ``` r
 pc %>%
   as.data.frame() %>%
