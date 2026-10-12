@@ -15,10 +15,10 @@ remotes::install_github("rdeek-lab/scaPCoA")
 
 **Option 2: Using `pak`**
 
-If `pak` is not installed, follow its [installation instructions](https://pak.r-lib.org/#installation).
+If `pak` is not installed, follow its [installation instructions](https://pak.r-lib.org/#installation). If you prefer to not update dependencies use `upgrade = FALSE`.
 
 ```r
-pak::pkg_install("rdeek-lab/scaPCoA")
+pak::pkg_install("rdeek-lab/scaPCoA", upgrade = TRUE)
 ```
 
 After installation, load the package:
