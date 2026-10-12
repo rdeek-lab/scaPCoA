@@ -1,11 +1,11 @@
 
 # scaPCoA: Supervised and Covariate-Adjusted Principal Coordinate Analysis
 
-Given that the gut microbiome has been shown to play a critical role in human health, discerning the relationship between microbial taxa and disease outcomes or phenotypes is of interest. Often, this involves association testing, predictive modeling, and visualizing trends in the data. Principal coordinates analysis (**PCoA**) is a commonly used dimension reduction technique in microbiome studies. PCoA relies on pairwise distances between samples and serves as a nonlinear alternative to the classic principal component analysis when non-Euclidean distances are used. Its low-dimensional embeddings provide intuitive visualizations but do not incorporate outcome-related information. Therefore, the low-dimensional principal coordinates may have poor performance in visualizing outcome differences, as well as in downstream disease prediction tasks. Additionally, covariates, such as demographics, lifestyle factors, and technical artifacts, can obscure true biological signals, leading to masked or spurious associations and limited generalizability. To address these limitations, we propose a supervised and covariate-adjusted PCoA algorithm (**scaPCoA**). By utilizing outcome information, while simultaneously minimizing the influence of nuisance variables, our method produces low-dimensional embeddings that better separate disease outcomes in visualizations and result in improved accuracy in downstream regression and classification tasks. We demonstrate the effectiveness of the proposed method and highlight its ability to extract important associations between the microbiome and disease outcomes while mitigating nuisance variation through simulations and application to real microbiome profiling studies.
+`scoPCoa` is an R package for supervised and covariate-adjusted principal coordinates analysis (**scaPCoA**). By utilizing outcome information, while simultaneously minimizing the influence of nuisance variables, scaPCoA produces low-dimensional embeddings that better separate disease outcomes in visualizations and result in improved accuracy in downstream regression and classification tasks.
 
 ## Installation
 
-You can install the development version of **scaPCoA** from GitHub using either `remotes` or `pak`.
+You can install the development version of `scaPCoA` from GitHub using either `remotes` or `pak`.
 
 **Option 1: Using `remotes`**
 
@@ -15,7 +15,7 @@ remotes::install_github("rdeek-lab/scaPCoA")
 
 **Option 2: Using `pak`**
 
-If `pak` is not installed, follow its [installation instructions](https://pak.r-lib.org/#installation). If you prefer to not update dependencies use `upgrade = FALSE`.
+If `pak` is not installed, follow its [installation instructions](https://pak.r-lib.org/#installation). If you prefer to not update dependencies, use `upgrade = FALSE`.
 
 ```r
 pak::pkg_install("rdeek-lab/scaPCoA", upgrade = TRUE)
@@ -32,8 +32,7 @@ library(scaPCoA)
 
 1.  **Visualization**: The coordinates estimated by `scapcoa` can be plotted to visualize outcome-associated patterns.
 
-2.  **Prediction**: The coordinates estimated by `scapcoa` can be used as predictive features in downstream regression or classification models for
-    continuous or binary outcomes. 
+2.  **Prediction**: The coordinates estimated by `scapcoa` can be used as predictive features in downstream regression or classification models for continuous or binary outcomes. 
 
 
 
@@ -94,7 +93,7 @@ Additionally, the columns of `pc` contain the estimated principal coordinates. T
 
 ## Comparison of PCoA and scaPCoA
 
-PCoA summarizes variation in microbial composition without using outcome or covariate information. In contrast, scaPCoA incorporates outcome supervision and covariate adjustment to identify outcome-associated patterns. Below, we compare the first two coordinates from both methods using Bray–Curtis dissimilarities, with samples colored and shaped by outcome (case or control).
+PCoA summarizes variation in microbial composition without using outcome or covariate information. In contrast, scaPCoA incorporates outcome supervision and covariate adjustment to identify outcome-associated patterns. Below, we compare the first two coordinates from both methods using Bray-Curtis dissimilarities, with samples colored and shaped by outcome (case or control).
 
 ```{r}
 # Ordinary PCoA using Bray–Curtis dissimilarities
